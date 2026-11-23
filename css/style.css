@@ -1,0 +1,312 @@
+/* UI from hiyroscript/shkr (itself ported from hiyroscript/vl): the same tokens, type, chips, bars, orb, wipe,
+   cards, panels, HUD, objective box and countdown ring. Game-specific additions are at the end. */
+:root{
+  --paper:#EDEFF2; --paper-2:#DFE4EA; --paper-3:#C8CFD8;
+  --ink:#0A0A10; --ink-2:#13131C; --mute:#7A8290;
+  --star:#FFC400;
+  --disp:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(16px,3.4vw,32px);
+  --col:min(100%,720px);
+  --top:calc(var(--pad) + env(safe-area-inset-top));
+  --bot:calc(var(--pad) + env(safe-area-inset-bottom));
+  --bg:#EDEFF2; --surface:#FFFFFF; --fg:#0A0A10; --dim:#4A515C; --faint:#6D7684;
+  --line:rgba(10,10,16,.15); --line-2:rgba(10,10,16,.08); --hover:rgba(10,10,16,.06);
+  --thumb:rgba(10,10,16,.22); --track:rgba(10,10,16,.10);
+  --done:#0A0A10; --danger:#BE0036; --danger-line:rgba(190,0,54,.40);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:#fff;color:var(--ink);font-family:var(--disp);font-weight:500;
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:3px}
+.hide{display:none !important}
+
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1}
+
+.screen{position:fixed;inset:0;z-index:5;display:none;flex-direction:column;align-items:center;
+  padding:var(--top) var(--pad) var(--bot)}
+.screen.on{display:flex}
+.screen.paper{background:var(--bg);color:var(--fg)}
+.screen.enter{animation:fadeUp .3s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.col{width:var(--col);display:flex;flex-direction:column;min-height:0;flex:1;position:relative}
+
+.tag{font-family:var(--mono);font-size:clamp(9px,2.4vw,11px);letter-spacing:.18em;text-transform:uppercase;
+  color:var(--faint);white-space:nowrap}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto;width:100%}
+.bar nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chip{font-family:var(--mono);font-size:clamp(9px,2.4vw,11px);letter-spacing:.14em;text-transform:uppercase;
+  padding:10px 14px;border-radius:100px;border:1px solid var(--line);color:var(--fg);
+  white-space:nowrap;transition:background .16s,border-color .16s,transform .1s,opacity .16s}
+.chip:hover{background:var(--hover)}
+.chip:active{transform:scale(.96)}
+.chip.solid{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip.solid:hover{opacity:.88;background:var(--fg)}
+.chip.danger{color:var(--fg);border:1px dashed rgba(10,10,16,.6)}
+#home .chip{background:#fff}
+/* white pills for the tags over the backdrop; the header's "hiyroscript" stays plain .tag text, as in vl */
+#home main .tag,#home footer .tag{background:#fff;padding:6px 11px;border-radius:100px;color:var(--dim)}
+#home .rail{box-shadow:0 0 0 3px #fff;background:var(--paper-3)}
+#home .pulse i{box-shadow:0 0 0 4px #fff}
+
+/* home */
+#home .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;min-height:0;gap:0;padding:10px 0}
+.title{font-size:clamp(30px,min(10vw,12.5vh),104px);font-weight:700;letter-spacing:-.045em;line-height:.88;
+  text-transform:uppercase;text-align:center;color:var(--fg);margin-top:clamp(6px,1.2vh,12px);max-width:13ch;text-wrap:balance;
+  -webkit-text-stroke:.16em #fff;paint-order:stroke fill;
+  text-shadow:0 0 14px #fff,0 0 28px #fff}
+.title span{display:inline-block;animation:letterIn .55s cubic-bezier(.2,.9,.2,1) both}
+@keyframes letterIn{from{opacity:0;transform:translateY(16px) scaleY(.92)}to{opacity:1;transform:none}}
+.play-row{margin-top:clamp(14px,3.2vh,40px);display:flex;align-items:center;gap:clamp(18px,5vw,40px)}
+.pulse{position:relative;width:clamp(64px,12vh,96px);height:clamp(64px,12vh,96px);border-radius:50%;
+  display:grid;place-items:center;transition:transform .12s;flex:0 0 auto}
+.pulse:active{transform:scale(.92)}
+.pulse i{position:absolute;inset:0;border-radius:50%;background:var(--ink);animation:breathe 1.6s ease-in-out infinite}
+.pulse b{position:absolute;inset:0;border-radius:50%;border:2px solid var(--ink);animation:halo 1.6s ease-out infinite}
+/* play icon: a white triangle about a third of the button tall, nudged right ~8% of its own width (margin-left
+   4.4% of the button shifts a centred grid item by 2.2%) so it looks centred; breathes in phase with the disc */
+.pulse u{position:relative;z-index:1;width:27.7%;height:32%;margin-left:4.4%;background:#fff;clip-path:polygon(0 0,100% 50%,0 100%);
+  pointer-events:none;animation:breathe 1.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.86)}50%{transform:scale(1)}}
+@keyframes halo{0%{transform:scale(.9);opacity:.65}100%{transform:scale(1.42);opacity:0}}
+#startLbl{margin-top:clamp(12px,2.2vh,22px);text-align:center}
+.rail{flex:1;height:2px;background:var(--track);position:relative;border-radius:2px;min-width:40px}
+.rail-fill{position:absolute;inset:0 auto 0 0;background:var(--fg);border-radius:2px;
+  transition:width .5s cubic-bezier(.2,.8,.2,1)}
+
+/* stars */
+.stars{display:flex;gap:.28em;justify-content:center;font-size:clamp(18px,3.4vh,26px);margin-top:clamp(8px,1.4vh,14px);min-height:1em}
+.star{width:1em;height:1em;background:rgba(10,10,16,.16);flex:0 0 auto;
+  clip-path:polygon(50% 2%,62% 36%,98% 37%,69% 59%,80% 94%,50% 73%,20% 94%,31% 59%,2% 37%,38% 36%)}
+.star.on{background:var(--star)}
+.star.rb{background:linear-gradient(90deg,#FF2952,#FF9F1A,#FFEE1A,#1FE05C,#19E3E3,#3D6BFF,#A64DFF,#FF3DB5,#FF2952,#FF9F1A,#FFEE1A,#1FE05C,#19E3E3,#3D6BFF,#A64DFF,#FF3DB5,#FF2952);
+  background-size:200% 100%;animation:rb 1.8s linear infinite}
+@keyframes rb{from{background-position:0% 0}to{background-position:100% 0}}
+.stars.big{font-size:clamp(40px,11vw,64px);margin:14px 0 6px}
+.stars.big .star{transform:scale(0)}
+.stars.big .star.pop{animation:starPop .5s cubic-bezier(.2,1.5,.4,1) forwards}
+.stars.big .star.rb.pop{animation:starPop .5s cubic-bezier(.2,1.5,.4,1) forwards,rb 1.3s linear infinite,shim 1.1s ease-in-out infinite .5s}
+@keyframes starPop{0%{transform:scale(0) rotate(-50deg)}70%{transform:scale(1.28) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes shim{0%,100%{filter:brightness(1) saturate(1)}50%{filter:brightness(1.25) saturate(1.3)}}
+
+/* wipe */
+#wipe{position:fixed;z-index:50;width:10px;height:10px;border-radius:50%;background:var(--ink);
+  transform:scale(0);pointer-events:none;display:none}
+#wipe.go{display:block;animation:wipeOut .62s cubic-bezier(.65,0,.35,1) forwards}
+#wipe.go.fade{transition:opacity .32s ease;opacity:0}
+@keyframes wipeOut{to{transform:scale(var(--sc,60))}}
+
+/* panels */
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-bottom:clamp(12px,2vh,20px);flex:0 0 auto;width:100%}
+.panel-title{font-size:clamp(24px,5.6vw,40px);font-weight:700;letter-spacing:-.03em;text-transform:uppercase;line-height:1;color:var(--fg)}
+.panel-body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  touch-action:pan-y;min-height:0;width:100%;padding-bottom:24px;scrollbar-width:thin;scrollbar-color:var(--thumb) transparent}
+.set-row{display:flex;align-items:center;gap:18px;padding:16px 0;border-bottom:1px solid var(--line-2)}
+.set-row .lbl{flex:1;min-width:0}
+.set-row .lbl b{display:block;font-weight:500;font-size:15px}
+.set-row .lbl span{font-size:12px;color:var(--faint);line-height:1.45;display:block;margin-top:3px}
+.set-ctl{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+.set-row output{font-family:var(--mono);font-size:12px;color:var(--dim);width:34px;text-align:right;flex:0 0 auto}
+input[type=range]{-webkit-appearance:none;appearance:none;width:clamp(110px,26vw,170px);height:24px;background:none;flex:0 0 auto}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--track);border-radius:2px}
+input[type=range]::-moz-range-track{height:2px;background:var(--track);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--fg);margin-top:-7px}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border:none;border-radius:50%;background:var(--fg)}
+.sw{width:46px;height:26px;border-radius:100px;background:var(--track);position:relative;flex:0 0 auto;transition:background .18s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+  background:var(--fg);transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.sw[aria-pressed=true]{background:var(--fg)}
+.sw[aria-pressed=true]::after{transform:translateX(20px);background:var(--bg)}
+@media (max-width:560px){
+  .set-row{flex-direction:column;align-items:stretch;gap:12px}
+  .set-ctl{justify-content:flex-end}
+  input[type=range]{width:min(210px,58vw)}
+}
+/* how to play (ported from vl): a live demo carousel, the hazard colour legend and the basics in one paragraph */
+.demo-shell{display:flex;flex-direction:column;gap:clamp(10px,1.8vh,16px)}
+/* landscape (11/7) like the game's preview renderer; max-width also follows max-height, so a short screen
+   narrows the canvas instead of stretching it */
+#demoCv{width:100%;max-width:min(520px,calc(min(46vh,420px) * 11 / 7));aspect-ratio:11/7;max-height:min(46vh,420px);border-radius:16px;
+  background:#0E0E16;display:block;border:1px solid var(--line);margin:0 auto}
+#demoKind{display:block;margin-bottom:6px}
+.demo-name{font-size:clamp(19px,4.4vw,28px);font-weight:700;letter-spacing:-.02em;color:var(--fg)}
+.demo-meta{display:flex;align-items:center;gap:7px;min-height:13px;margin-top:6px}
+.demo-meta s{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.demo-desc{color:var(--dim);font-size:clamp(13px,2.4vw,15px);line-height:1.55;max-width:58ch}
+#demoDesc{min-height:3.1em;margin-top:8px}
+.demo-nav{display:flex;align-items:center;gap:8px}
+.dot-row{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.dot-row i{width:6px;height:6px;border-radius:50%;background:var(--line);transition:background .2s,transform .2s}
+.dot-row i.on{background:var(--fg);transform:scale(1.35)}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 18px;margin:clamp(18px,3vh,26px) 0}
+.legend div{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint)}
+.legend s{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+/* scroll affordance (vl): a fade and a bobbing ▾ while the panel has more below. Only How to play has the cue. */
+#howto .col::after{content:"";position:absolute;left:0;right:6px;bottom:0;height:52px;pointer-events:none;z-index:1;
+  background:linear-gradient(to top,var(--bg) 12%,transparent);opacity:0;transition:opacity .22s}
+#howto .col.more::after{opacity:1}
+.scroll-cue{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);pointer-events:none;z-index:2;
+  font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
+  opacity:0;transition:opacity .22s;display:flex;align-items:center;gap:6px}
+.col.more .scroll-cue{opacity:1;animation:cueBob 1.8s ease-in-out infinite}
+@keyframes cueBob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,3px)}}
+
+/* HUD */
+#hud{position:fixed;inset:0;z-index:8;display:none;flex-direction:column;pointer-events:none;
+  padding:calc(10px + env(safe-area-inset-top)) var(--pad) calc(16px + env(safe-area-inset-bottom));color:var(--ink)}
+#hud.on{display:flex}
+.hud-rail{height:4px;border-radius:4px;background:#fff;box-shadow:inset 0 0 0 1px var(--ink);overflow:hidden;width:100%}
+.hud-rail i{display:block;height:100%;width:100%;background:var(--ink);transform-origin:left;transform:scaleX(0)}
+.hud-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-top:10px}
+.meta{font-family:var(--mono);font-size:clamp(9px,2.3vw,11px);letter-spacing:.15em;text-transform:uppercase;
+  color:rgba(10,10,16,.62);min-width:0;background:#fff;padding:6px 11px;border-radius:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta b{color:var(--ink);font-weight:700}
+.hud-right{display:flex;gap:12px;align-items:center;min-width:0}
+#hudTry{flex:0 0 auto}
+#hudTry b{font-size:1.35em;letter-spacing:-.01em}
+#pauseBtn{pointer-events:auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid rgba(10,10,16,.3);color:var(--ink);flex:0 0 auto;background:#fff}
+#pauseBtn::before{content:"";width:4px;height:12px;border-left:3px solid;border-right:3px solid;box-sizing:content-box}
+
+/* objective box: the goal, the controls side by side, and "Don't show again". Interactive only while shown. */
+#msBanner{position:fixed;left:50%;top:22%;transform:translate(-50%,-8px);z-index:12;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:clamp(10px,2.6vw,13px);letter-spacing:.2em;text-transform:uppercase;line-height:1.6;
+  color:var(--ink);opacity:0;visibility:hidden;text-align:center;width:min(92vw,640px);
+  background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:18px;padding:14px 18px 10px;
+  transition:opacity .45s ease,transform .45s ease,visibility 0s .45s}
+#msBanner.show{opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,0);
+  transition:opacity .3s cubic-bezier(.2,.8,.2,1),transform .3s cubic-bezier(.2,.8,.2,1)}
+#msBanner b{font-weight:700}
+.ob-title{font-weight:700;letter-spacing:.24em}
+.ob-keys{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 30px}
+.ob-key{white-space:nowrap}
+.ob-key b{margin-right:.55em}
+.ob-hide{display:inline-flex;align-items:center;gap:9px;margin-top:2px;padding:6px 8px;border-radius:100px;cursor:pointer;
+  font-size:.8em;letter-spacing:.16em;color:var(--dim);position:relative;transition:background .16s}
+.ob-hide:hover{background:var(--hover)}
+.ob-hide input{position:absolute;left:8px;top:50%;width:15px;height:15px;margin:-7.5px 0 0;opacity:0;pointer-events:none}
+.ob-box{width:15px;height:15px;flex:0 0 auto;border:1.5px solid var(--ink);border-radius:4px;background:#fff;
+  display:grid;place-items:center;transition:background .14s}
+.ob-box::after{content:"";width:7px;height:3.5px;border-left:2px solid #fff;border-bottom:2px solid #fff;
+  transform:translateY(-1px) rotate(-45deg) scale(.4);opacity:0;transition:opacity .14s,transform .14s}
+.ob-hide input:checked + .ob-box{background:var(--ink)}
+.ob-hide input:checked + .ob-box::after{opacity:1;transform:translateY(-1px) rotate(-45deg)}
+.ob-hide input:focus-visible + .ob-box{outline:2px solid var(--ink);outline-offset:2px}
+
+/* countdown ring (shkr's level tip ring), used by the effect pills */
+.tip-count,.fx-ring{position:relative;flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center}
+.tip-count svg,.fx-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.tip-count circle,.fx-ring circle{fill:none;stroke-width:3}
+.tip-track{stroke:var(--line-2)}
+.tip-arc{stroke:#E8112D;stroke-linecap:round;stroke-dasharray:100}
+
+/* overlay cards */
+#overlay{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;
+  padding:calc(var(--top) + 8px) var(--pad) calc(var(--bot) + 8px);background:rgba(6,6,10,.72);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--fg);text-align:center;
+  overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+#overlay.on{display:flex}
+#overlay.out{animation:ovOut .2s ease forwards;pointer-events:none}
+@keyframes ovOut{to{opacity:0}}
+.card{max-width:430px;width:100%;margin:auto;animation:cardIn .28s cubic-bezier(.2,.8,.2,1) both;
+  background:var(--surface);border:1px solid var(--line);border-radius:22px;
+  padding:clamp(24px,4vw,34px) clamp(20px,4vw,32px);box-shadow:0 24px 70px rgba(0,0,0,.45)}
+@keyframes cardIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+.card .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint)}
+.card h2{font-size:clamp(28px,6.4vw,48px);font-weight:700;letter-spacing:-.035em;line-height:1;margin:12px 0;text-transform:uppercase;color:var(--fg);text-wrap:balance}
+.card p{color:var(--dim);font-size:clamp(14px,2.6vw,15px);line-height:1.6;max-width:36ch;margin:0 auto;text-wrap:pretty}
+.card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:clamp(20px,3.4vh,28px)}
+.card h2.accent::after{content:"";display:block;width:44px;height:4px;border-radius:4px;background:var(--hz);margin:12px auto 0}
+.stat-row{display:flex;justify-content:center;gap:clamp(18px,6vw,30px);margin-top:16px;flex-wrap:wrap}
+.stat-row div{text-align:center}
+.stat-row b{font-family:var(--mono);font-size:19px;font-weight:400;display:block}
+.stat-row span{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+@media (max-height:430px){
+  .title{font-size:clamp(26px,11vh,56px)}
+  .play-row{margin-top:8px}
+  .pulse{width:56px;height:56px}
+  #startLbl{margin-top:6px}
+  .stars{margin-top:4px}
+}
+@media (prefers-reduced-motion:reduce){
+  .pulse i,.pulse b,.pulse u{animation:none}
+  .col.more .scroll-cue{animation:none}
+}
+
+
+/* ============================================================================
+   Courser's Evade! additions — built from the same tokens and parts
+   ========================================================================== */
+/* the home demo sits behind the menu under a light paper wash, so the UI stays readable */
+#home{background:rgba(237,239,242,.34)}
+#home .tag#modeTag{margin-bottom:2px}
+.home-best{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:clamp(10px,1.8vh,16px);background:#fff;border-radius:16px;padding:8px 16px 7px}
+.home-best b{font-family:var(--mono);font-size:clamp(18px,3.2vh,24px);font-weight:700;letter-spacing:.02em;color:var(--fg);font-variant-numeric:tabular-nums}
+.home-best span{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+.title{max-width:10ch}
+
+/* wash used when the home demo restarts */
+#fade{position:fixed;inset:0;z-index:2;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .35s ease}
+#fade.on{opacity:1}
+
+/* HUD: shkr's rail (here: how close the Guard is), its meta pills and pause button, the score big in the title type */
+.hud-railrow{display:flex;align-items:center;gap:10px}
+.hud-railtag{font-family:var(--mono);font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);background:#fff;padding:3px 8px;border-radius:100px;flex:0 0 auto}
+.hud-rail{flex:1}
+.hud-rail i{transition:background .25s}
+.hud-rail.hot i{background:var(--danger)}
+.hud-rail.hot{box-shadow:inset 0 0 0 1px var(--danger)}
+.hud-score{align-self:center;margin-top:clamp(2px,1vh,10px);font-size:clamp(40px,min(13vw,9vh),84px);font-weight:700;letter-spacing:-.045em;line-height:.9;
+  color:var(--fg);-webkit-text-stroke:.14em #fff;paint-order:stroke fill;text-shadow:0 0 14px #fff,0 0 28px #fff;font-variant-numeric:tabular-nums}
+.hud-score.bump{animation:bump .28s cubic-bezier(.2,.9,.2,1)}
+@keyframes bump{40%{transform:scale(1.1)}}
+.hud-fx{align-self:center;display:flex;gap:8px;margin-top:10px;min-height:44px}
+.fx-pill{display:none;align-items:center;gap:8px;background:#fff;border-radius:100px;padding:3px 14px 3px 3px;
+  font-family:var(--mono);font-size:clamp(9px,2.3vw,11px);letter-spacing:.15em;text-transform:uppercase;color:rgba(10,10,16,.62)}
+.fx-pill.on{display:flex;animation:cardIn .25s cubic-bezier(.2,.8,.2,1) both}
+.fx-pill > span b{color:var(--ink);font-weight:700}
+.fx-ring{width:38px;height:38px}
+.fx-ring b{font-family:var(--disp);font-weight:700;font-size:18px;line-height:1;color:#8B3DFF}
+.fx-pill .tip-arc{stroke:#8B3DFF}
+.fx-pill.water .tip-arc{stroke:#3D8BFF}
+.fx-pill.water .fx-ring b{font-size:14px}
+.hud-pops{align-self:center;position:relative;width:100%;height:0}
+.hud-pop{position:absolute;left:50%;top:0;transform:translate(-50%,0);white-space:nowrap;
+  font-family:var(--mono);font-size:clamp(10px,2.6vw,12px);letter-spacing:.16em;text-transform:uppercase;color:var(--ink);
+  background:#fff;padding:6px 12px;border-radius:100px;animation:popUp 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+.hud-pop b{font-weight:700}
+.hud-pop.tier{background:var(--ink);color:#fff}
+@keyframes popUp{0%{opacity:0;transform:translate(-50%,10px) scale(.9)}15%{opacity:1;transform:translate(-50%,0) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-26px)}}
+
+/* danger: a red vignette as the Guard closes in; oil: purple edges while left and right are swapped */
+#fxDanger,#fxOil{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0}
+#fxDanger{background:radial-gradient(ellipse at 50% 45%,transparent 48%,rgba(190,0,54,.5) 100%)}
+#fxOil{box-shadow:inset 0 0 90px 18px rgba(139,61,255,.72),inset 0 0 0 4px rgba(139,61,255,.85);transition:opacity .25s ease}
+#fxOil.on{opacity:1;animation:oilPulse 1.1s ease-in-out infinite}
+@keyframes oilPulse{50%{box-shadow:inset 0 0 120px 28px rgba(139,61,255,.6),inset 0 0 0 4px rgba(139,61,255,.85)}}
+
+/* the tutorial is shkr's objective box; on touch screens the two halves are labelled while it shows */
+#touchHint{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));z-index:11;display:flex;justify-content:space-between;
+  padding:0 var(--pad);pointer-events:none;opacity:0;transition:opacity .45s ease}
+#touchHint span{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);background:rgba(255,255,255,.92);
+  border:1px solid var(--line);padding:9px 14px;border-radius:100px}
+#touchHint.show{opacity:1}
+
+/* How to play: the scene canvas */
+#demoCv{background:#C6CDD6}
+.legend s.guard{background:linear-gradient(90deg,#2C6BFF 50%,#FF2846 50%)}
+
+@media (max-height:430px){
+  .home-best{margin-top:4px;padding:4px 12px}
+  .hud-score{font-size:clamp(30px,10vh,48px)}
+}
+@media (prefers-reduced-motion:reduce){
+  #fxOil.on{animation:none}
+  .hud-pop{animation-duration:1.4s}
+}
